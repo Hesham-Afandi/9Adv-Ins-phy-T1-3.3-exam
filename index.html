@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌍 امتحان السقوط الحر (الفيزياء - صف 9 متقدم)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Cairo', sans-serif; }
+        body.en-mode { font-family: 'Inter', sans-serif; }
+        .correct { background-color: #dcfce7 !important; border-color: #16a34a !important; }
+        .incorrect { background-color: #fee2e2 !important; border-color: #dc2626 !important; }
+        .formula { font-family: 'Times New Roman', serif; letter-spacing: 0.5px; direction: ltr; display: inline-block; font-style: italic; }
+        .timer-warning { color: #dc2626 !important; animation: pulse 1s infinite; }
+        @keyframes pulse { 50% { opacity: 0.7; } }
+        @media print { .no-print { display: none !important; } }
+        .success-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 0.875rem; }
+        .grade-excellent { background: #dcfce7; color: #166534; }
+        .grade-good { background: #fef3c7; color: #92400e; }
+        .grade-pass { background: #dbeafe; color: #1e40af; }
+        .grade-fail { background: #fee2e2; color: #991b1b; }
+        .lang-switch {
+            position: fixed; top: 16px; left: 16px; z-index: 100;
+            background: white; padding: 6px; border-radius: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15); display: flex; gap: 4px;
+            border: 2px solid #3b82f6;
+        }
+        [dir="ltr"] .lang-switch { left: auto; right: 16px; }
+        .lang-btn {
+            padding: 6px 14px; border-radius: 20px; cursor: pointer; font-weight: bold;
+            transition: all 0.3s; border: none; font-size: 0.875rem;
+            background: transparent; color: #6b7280;
+        }
+        .lang-btn.active { background: #3b82f6; color: white; box-shadow: 0 2px 6px rgba(59,130,246,0.4); }
+        .lang-btn:hover:not(.active) { background: #eff6ff; color: #3b82f6; }
+        .shuffle-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 p-4 md:p-8 min-h-screen">
+
+    <!-- Language Switcher -->
+    <div class="lang-switch no-print">
+        <button class="lang-btn active" onclick="setLanguage('ar')" id="btn-ar">عربي</button>
+        <button class="lang-btn" onclick="setLanguage('en')" id="btn-en">EN</button>
+    </div>
+
+    <!-- Timer -->
+    <div id="timer-container" class="max-w-4xl mx-auto mb-4 text-center no-print">
+        <div class="bg-white p-4 rounded-xl shadow-md inline-block border-2 border-blue-100">
+            <span class="text-gray-600 ml-2" data-ar="⏱️ الوقت المتبقي:" data-en="⏱️ Time Remaining:">⏱️ الوقت المتبقي:</span>
+            <span id="timer" class="text-2xl font-bold text-blue-600 font-mono">60:00</span>
+            <span class="shuffle-badge" data-ar="🔀 أسئلة عشوائية" data-en="🔀 Random Questions">🔀 أسئلة عشوائية</span>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="max-w-4xl mx-auto mb-6 flex flex-wrap gap-3 justify-center no-print">
+        <button onclick="toggleAnswers()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-medium transition shadow cursor-pointer" data-ar="👁️ إظهار / إخفاء الإجابات" data-en="👁️ Show / Hide Answers">👁️ إظهار / إخفاء الإجابات</button>
+        <button onclick="window.print()" class="bg-gray-800 hover:bg-gray-900 text-white px-5 py-2 rounded-lg font-medium transition shadow cursor-pointer" data-ar="🖨️ طباعة / PDF" data-en="🖨️ Print / PDF">🖨️ طباعة / PDF</button>
+        <button onclick="reshuffleExam()" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-5 py-2 rounded-lg font-medium transition shadow cursor-pointer" data-ar="🔀 إعادة خلط الأسئلة" data-en="🔀 Reshuffle Questions">🔀 إعادة خلط الأسئلة</button>
+    </div>
+
+    <!-- Header -->
+    <header class="max-w-4xl mx-auto bg-white p-6 rounded-xl shadow-md mb-8 border-r-4 border-blue-600">
+        <div class="text-center">
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-2" data-ar="🌍 امتحان السقوط الحر (الفيزياء - صف 9 متقدم)" data-en="🌍 Free Fall Exam (Physics - Grade 9 Advanced)">🌍 امتحان السقوط الحر (الفيزياء - صف 9 متقدم)</h1>
+            <h2 class="text-lg text-blue-600 font-semibold" data-ar="وحدة 3: الحركة المتسارعة - القسم 3: السقوط الحر" data-en="Unit 3: Accelerated Motion - Section 3: Free Fall">وحدة 3: الحركة المتسارعة - القسم 3: السقوط الحر</h2>
+            <p class="text-sm text-gray-600 mt-2" data-ar="أسئلة تغطي: السقوط الحر، تسارع السقوط الحر، الرسومات البيانية، معادلات الحركة، والتطبيقات الحياتية" data-en="Covers: Free fall, free-fall acceleration, graphs, motion equations, and real-life applications">أسئلة تغطي: السقوط الحر، تسارع السقوط الحر، الرسومات البيانية، معادلات الحركة، والتطبيقات الحياتية</p>
+        </div>
+        <div class="mt-4 flex flex-wrap justify-center gap-4 text-sm text-gray-600">
+            <span><span data-ar="📅 التاريخ:" data-en="📅 Date:">📅 التاريخ:</span> <input type="text" class="border-b border-gray-400 bg-transparent w-28 text-center"></span>
+            <span><span data-ar="👤 الاسم:" data-en="👤 Name:">👤 الاسم:</span> <input type="text" id="studentName" class="border-b border-gray-400 bg-transparent w-32 text-center" placeholder="ادخل الاسم"></span>
+            <span><span data-ar="🏫 الشعبة:" data-en="🏫 Class:">🏫 الشعبة:</span> <input type="text" id="studentClass" class="border-b border-gray-400 bg-transparent w-28 text-center" placeholder="الشعبة"></span>
+        </div>
+    </header>
+
+    <!-- Exam Content (Dynamically Generated) -->
+    <main class="max-w-4xl mx-auto space-y-8" id="exam-content"></main>
+
+    <!-- Submit Button -->
+    <div class="text-center no-print pb-8 mt-8">
+        <button onclick="gradeExam()" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-lg px-10 py-4 rounded-xl font-bold shadow-xl transition transform hover:scale-105 cursor-pointer" data-ar="📝 تسليم وتصحيح الامتحان" data-en="📝 Submit & Grade Exam">📝 تسليم وتصحيح الامتحان</button>
+    </div>
+
+    <!-- Results Panel -->
+    <div id="results-panel" class="max-w-4xl mx-auto mt-8 bg-white p-8 rounded-2xl shadow-2xl border-t-4 border-emerald-500 hidden no-print">
+        <h2 class="text-3xl font-bold text-gray-900 mb-6 text-center" data-ar="📊 نتائج الامتحان" data-en="📊 Exam Results">📊 نتائج الامتحان</h2>
+        <div class="grid md:grid-cols-3 gap-4 mb-6">
+            <div class="bg-blue-50 p-4 rounded-xl text-center"><p data-ar="اسم الطالب" data-en="Student Name">اسم الطالب</p><p id="res-name" class="font-bold text-xl text-blue-700">-</p></div>
+            <div class="bg-purple-50 p-4 rounded-xl text-center"><p data-ar="التاريخ" data-en="Date">التاريخ</p><p id="res-date" class="font-bold text-xl text-purple-700">-</p></div>
+            <div class="bg-emerald-50 p-4 rounded-xl text-center"><p data-ar="المجموع" data-en="Score">المجموع</p><p id="res-total" class="font-bold text-3xl text-emerald-600">0 / 100</p></div>
+        </div>
+        <div class="text-center mb-6">
+            <span id="success-badge" class="success-badge grade-excellent">-</span>
+            <p id="success-percent" class="text-4xl font-bold text-emerald-600 mt-2">100%</p>
+            <p class="text-sm text-gray-500" data-ar="نسبة النجاح" data-en="Success Rate">نسبة النجاح</p>
+        </div>
+        <div class="bg-gray-50 p-6 rounded-xl mb-6">
+            <h3 class="font-bold text-lg mb-4 text-gray-800" data-ar="📈 تفصيل الأداء حسب القسم:" data-en="📈 Performance Breakdown:">📈 تفصيل الأداء حسب القسم:</h3>
+            <div class="space-y-3">
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-700" data-ar="تعريف السقوط الحر" data-en="Free Fall Definition">تعريف السقوط الحر</span>
+                    <span id="sec1-score" class="font-bold text-blue-600">0/4</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-700" data-ar="تسارع السقوط الحر" data-en="Free-Fall Acceleration">تسارع السقوط الحر</span>
+                    <span id="sec2-score" class="font-bold text-blue-600">0/4</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-700" data-ar="الرسومات البيانية" data-en="Graphs">الرسومات البيانية</span>
+                    <span id="sec3-score" class="font-bold text-blue-600">0/4</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-700" data-ar="معادلات الحركة" data-en="Motion Equations">معادلات الحركة</span>
+                    <span id="sec4-score" class="font-bold text-blue-600">0/4</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-700" data-ar="التطبيقات الحياتية" data-en="Real-Life Applications">التطبيقات الحياتية</span>
+                    <span id="sec5-score" class="font-bold text-blue-600">0/4</span>
+                </div>
+            </div>
+        </div>
+        <div class="text-center mb-6">
+            <button id="sendEmailBtn" onclick="sendResultsToEmail()" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-lg px-8 py-3 rounded-xl font-bold shadow-xl transition transform hover:scale-105 cursor-pointer" data-ar="📧 إرسال النتائج للمعلم" data-en="📧 Send Results to Teacher">📧 إرسال النتائج للمعلم</button>
+            <p id="emailStatus" class="text-sm mt-2 text-center font-medium"></p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="max-w-4xl mx-auto mt-10 mb-8 text-center text-gray-500 text-sm no-print">
+        © <span data-ar="السقوط الحر - الفيزياء (صف 9 متقدم)" data-en="Free Fall - Physics (Grade 9 Advanced)">السقوط الحر - الفيزياء (صف 9 متقدم)</span> | Mr. Mohammed Hesham
+    </footer>
+
+    <script>
+    // ==================== EmailJS Settings ====================
+    const PUBLIC_KEY = "Rb3Lq8tXaFmc5YHUH";
+    const SERVICE_ID = "service_w15m64i";
+    const TEMPLATE_ID = "template_5b0u2tq";
+    const TARGET_EMAIL = "mohammedhesham872@gmail.com";
+    emailjs.init(PUBLIC_KEY);
+
+    // ==================== Exam Data ====================
+    const originalExamData = {
+        sections: [
+            {
+                id: 'sec1',
+                title: { ar: '🔹 الجزء الأول: تعريف السقوط الحر', en: '🔹 Part 1: Free Fall Definition' },
+                questions: [
+                    {
+                        q: { ar: 'ما تعريف السقوط الحر في الفيزياء؟', en: 'What is the definition of free fall in physics?' },
+                        options: [
+                            { ar: 'حركة جسم عندما تكون الجاذبية هي القوة الوحيدة المؤثرة فيه', en: 'Motion of an object when gravity is the only force acting on it' },
+                            { ar: 'حركة جسم عندما تكون هناك قوى متعددة مؤثرة فيه', en: 'Motion of an object when multiple forces act on it' },
+                            { ar: 'حركة جسم في خط مستقيم بسرعة ثابتة', en: 'Motion of an object in a straight line at constant speed' },
+                            { ar: 'حركة جسم في دائرة', en: 'Motion of an object in a circle' }
+                        ],
+                        correct: 0,
+                        answer: { ar: 'السقوط الحر هو حركة جسم عندما تكون الجاذبية هي القوة الوحيدة المؤثرة فيه.', en: 'Free fall is the motion of an object when gravity is the only force acting on it.' }
+                    },
+                    {
+                        q: { ar: 'أي من التالي يمثل مثالاً على السقوط الحر؟', en: 'Which of the following is an example of free fall?' },
+                        options: [
+                            { ar: 'قذف كرة لأعلى في الهواء', en: 'Throwing a ball upward in the air' },
+                            { ar: 'سيارة تتحرك على طريق مستوي', en: 'A car moving on a flat road' },
+                            { ar: 'طائرة تطير في السماء', en: 'An airplane flying in the sky' },
+                            { ar: 'دراجة تتحرك على طريق مائل', en: 'A bicycle moving on an inclined road' }
+                        ],
+                        correct: 0,
+                        answer: { ar: 'قذف كرة لأعلى في الهواء يمثل مثالاً على السقوط الحر إذا كانت الجاذبية هي القوة الوحيدة المؤثرة.', en: 'Throwing a ball upward in the air is an example of free fall if gravity is the only force acting on it.' }
+                    },
+                    {
+                        q: { ar: 'ما الفرق بين السقوط الحر في الفيزياء والاستخدام العام؟', en: 'What is the difference between free fall in physics and general usage?' },
+                        options: [
+                            { ar: 'في الفيزياء، السقوط الحر يعني حركة تحت تأثير الجاذبية فقط، بينما في الاستخدام العام يعني سقوط سريع', en: 'In physics, free fall means motion under the influence of gravity only, while in general usage it means a rapid fall' },
+                            { ar: 'لا يوجد فرق', en: 'There is no difference' },
+                            { ar: 'في الفيزياء، السقوط الحر يعني سقوط سريع، بينما في الاستخدام العام يعني حركة تحت تأثير الجاذبية فقط', en: 'In physics, free fall means a rapid fall, while in general usage it means motion under the influence of gravity only' },
+                            { ar: 'في الفيزياء، السقوط الحر يعني حركة في دائرة، بينما في الاستخدام العام يعني سقوط سريع', en: 'In physics, free fall means motion in a circle, while in general usage it means a rapid fall' }
+                        ],
+                        correct: 0,
+                        answer: { ar: 'في الفيزياء، السقوط الحر يعني حركة تحت تأثير الجاذبية فقط، بينما في الاستخدام العام يعني سقوط سريع.', en: 'In physics, free fall means motion under the influence of gravity only, while in general usage it means a rapid fall.' }
+                    },
+                    {
+                        q: { ar: 'ما الذي يحدث إذا أسقطت ورقة وكتاباً معاً في الهواء؟', en: 'What happens if you drop a piece of paper and a book together in the air?' },
+                        options: [
+                            { ar: 'يسقط الكتاب أولاً بسبب تأثير الهواء على الورقة', en: 'The book falls first due to air resistance on the paper' },
+                            { ar: 'يسقطان معاً في نفس الوقت', en: 'They fall together at the same time' },
+                            { ar: 'تسقط الورقة أولاً بسبب وزنها الخفيف', en: 'The paper falls first because of its light weight' },
+                            { ar: 'لا يسقط أي منهما', en: 'Neither falls' }
+                        ],
+                        correct: 0,
+                        answer: { ar: 'يسقط الكتاب أولاً بسبب تأثير الهواء على الورقة، حيث أن الورقة خفيفة الوزن ويتأثر حركة سقوطها بمقاومة الهواء.', en: 'The book falls first due to air resistance on the paper, as the paper is lightweight and its fall is affected by air resistance.' }
+                    }
+                ]
+            },
+            {
+                id: 'sec2',
+                title: { ar: '🔹 الجزء الثاني: تسارع السقوط الحر', en: '🔹 Part 2: Free-Fall Acceleration' },
+                questions: [
+                    {
+                        q: { ar: 'ما قيمة تسارع السقوط الحر بالقرب من سطح الأرض؟', en: 'What is the value of free-fall acceleration near the Earth\'s surface?' },
+                        options: [
+                            { ar: '9.8 م/ث²', en: '9.8 m/s²' },
+                            { ar: '10 م/ث²', en: '10 m/s²' },
+                            { ar: '5 م/ث²', en: '5 m/s²' },
+                            { ar: '1.6 م/ث²', en: '1.6 m/s²' }
+                        ],
+                        correct: 0,
+                        answer: { ar: 'قيمة تسارع السقوط الحر بالقرب من سطح الأرض هي 9.8 م/ث².', en: 'The value of free-fall acceleration near the Earth\'s surface is 9.8 m/s².' }
+                    },
+                    {
+                        q: { ar: 'ما اتجاه تسارع السقوط الحر إذا كان الاتجاه لأعلى موجباً؟', en: 'What is the direction of free-fall acceleration if the upward direction is positive?' },
+                        options: [
+                            { ar: 'سالب', en: 'Negative' },
+                            { ar: 'موجب', en: 'Positive' },
+                            { ar: 'صفر', en: 'Zero' },
+                            { ar: 'يتغير مع الزمن', en: 'Changes with time' }
+                        ],
+                        correct: 0,
+                        answer: { ar: 'اتجاه تسارع السقوط الحر يكون سالباً إذا كان الاتجاه لأعلى موجباً.', en: 'The direction of free-fall acceleration is negative if the upward direction is positive.' }
+                    },
+                    {
+                        q: { ar: 'ما قيمة تسارع السقوط الحر على سطح القمر؟', en: 'What is the value of free-fall acceleration on the Moon\'s surface?' },
+                        options: [
+                            { ar: '1.6 م/ث²', en: '1.6 m/s²' },
+                            { ar: '9.8 م/ث²', en: '9.8 m/s²' },
+                            { ar: '5 م/ث²', en: '5 m/s²' },
+                            { ar: '3.2 م/ث²', en: '3.2 m/s²' }
+                        ],
+                        correct: 0,
+                        answer: { ar: 'قيمة تسارع السقوط الحر على سطح القمر هي 1.6 م/ث².', en: 'The value of free-fall acceleration on the Moon\'s surface is 1.6 m/s².' }
+                    },
+                    {
+                        q: { ar: 'ما الذي يؤثر على قيمة تسارع السقوط الحر؟', en: 'What affects the value of free-fall acceleration?' },
+                        options: [
+                            { ar: 'كتلة الجسم المسؤول عن التسارع (مثل الأرض أو القمر)', en: 'The mass of the body causing the acceleration (e.g., Earth or Moon)' },
+                            { ar: 'كتلة الجسم الساقط', en: 'The mass of the falling object' },
+                            { ar: 'شكل الجسم الساقط', en: 'The shape of the falling object' },
+                            { ar: 'لون الجسم الساقط', en: 'The color of the falling object' }
+                        ],
+                        correct: 0,
+                        answer: { ar: 'قيمة تسارع السقوط الحر تتأثر بكتلة الجسم المسؤول عن التسارع (مثل الأرض أو القمر).', en: 'The value of free-fall acceleration is affected by the mass of the body causing the acceleration (e.g., Earth or Moon).' }
+                    }
+                ]
+            },
+            {
+                id: 'sec3',
+                title: { ar: '🔹 الجزء الثالث: الرسومات البيانية', en: '🔹 Part 3: Graphs' },
+                questions: [
+                    {
+                        q: { ar: 'ما شكل الرسم البياني (السرعة المتجهة - الزمن) لجسم في السقوط الحر؟', en: 'What is the shape of the velocity-time graph for an object in free fall?' },
+                        options: [
+                            { ar: 'خط مستقيم', en: 'Straight line' },
+                            { ar: 'منحنى صعودي', en: 'Upward curve' },
+                            { ar: 'منحنى هابط', en: 'Downward curve' },
+                            { ar: 'خط أفقي', en: 'Horizontal line' }
+                        ],
+                        correct: 0,
+                        answer: { ar: 'الرسم البياني (السرعة المتجهة - الزمن) لجسم في السقوط الحر هو خط مستقيم.', en: 'The velocity-time graph for an object in free fall is a straight line.' }
+                    },
+                    {
+                        q: { ar: 'ما الذي يمثله ميل الرسم البياني (السرعة المتجهة - الزمن) في السقوط الحر؟', en: 'What does the slope of the velocity-time graph represent in free fall?' },
+                        options: [
+                            { ar: 'تسارع السقوط الحر', en: 'Free-fall acceleration' },
+                            { ar: 'السرعة المتجهة', en: 'Vector velocity' },
+                            { ar: 'الإزاحة', en: 'Displacement' },
+                            { ar: 'المسافة', en: 'Distance' }
+                        ],
+                        correct: 0,
+                        answer: { ar: 'ميل الرسم البياني (السرعة المتجهة - الزمن) في السقوط الحر يمثل تسارع السقوط الحر.', en: 'The slope of the velocity-time graph in free fall represents free-fall acceleration.' }
+                    },
+                    {
+                        q: { ar: 'ما شكل الرسم البياني (الموقع - الزمن) لجسم في السقوط الحر؟', en: 'What is the shape of the position-time graph for an object in free fall?' },
+                        options: [
+                            { ar: 'قطع مكافئ', en: 'Parabola' },
+                            { ar: 'خط مستقيم', en: 'Straight line' },
+                            { ar: 'منحنى صعودي', en: 'Upward curve' },
+                            { ar: 'خط أفقي', en: 'Horizontal line' }
+                        ],
+                        correct: 0,
+                        answer: { ar: 'الرسم البياني (الموقع - الزمن) لجسم في السقوط الحر هو قطع مكافئ.', en: 'The position-time graph for an object in free fall is a parabola.' }
+                    },
+                    {
+                        q: { ar: 'ما الذي يمثله المساحة تحت الرسم البياني (السرعة المتجهة - الزمن) في السقوط الحر؟', en: 'What does the area under the velocity-time graph represent in free fall?' },
+                        options: [
+                            { ar: 'الإزاحة', en: 'Displacement' },
+                            { ar: 'السرعة المتجهة', en: 'Vector velocity' },
+                            { ar: 'التسارع', en: 'Acceleration' },
+                            { ar: 'المسافة', en: 'Distance' }
+                        ],
+                        correct: 0,
+                        answer: { ar: 'المساحة تحت الرسم البياني (السرعة المتجهة - الزمن) في السقوط الحر تمثل الإزاحة.', en: 'The area under the velocity-time graph in free fall represents displacement.' }
+                    }
+                ]
+            },
+            {
+                id: 'sec4',
+                title: { ar: '🔹 الجزء الرابع: معادلات الحركة', en: '🔹 Part 4: Motion Equations' },
+                questions: [
+                    {
+                        q: { ar: 'ما معادلة السرعة المتجهة النهائية لجسم في السقوط الحر؟', en: 'What is the equation for the final velocity of an object in free fall?' },
+                        options: [
+                            { ar: 'v_f = v_i + g t', en: 'v_f = v_i + g t' },
+                            { ar: 'v_f = v_i + t', en: 'v_f = v_i + t' },
+                            { ar: 'v_f = g t', en: 'v_f = g t' },
+                            { ar: 'v_f = v_i + 0.5 g t²', en: 'v_f = v_i + 0.5 g t²' }
+                        ],
+                        correct: 0,
+                        answer: { ar: 'معادلة السرعة المتجهة النهائية لجسم في السقوط الحر هي v_f = v_i + g t.', en: 'The equation for the final velocity of an object in free fall is v_f = v_i + g t.' }
+                    },
+                    {
+                        q: { ar: 'ما معادلة الموقع النهائي لجسم في السقوط الحر؟', en: 'What is the equation for the final position of an object in free fall?' },
+                        options: [
+                            { ar: 'y_f = y_i + v_i t + 0.5 g t²', en: 'y_f = y_i + v_i t + 0.5 g t²' },
+                            { ar: 'y_f = y_i + v_i t', en: 'y_f = y_i + v_i t' },
+                            { ar: 'y_f = v_i t + 0.5 g t²', en: 'y_f = v_i t + 0.5 g t²' },
+                            { ar: 'y_f = y_i + g t', en: 'y_f = y_i + g t' }
+                        ],
+                        correct: 0,
+                        answer: { ar: 'معادلة الموقع النهائي لجسم في السقوط الحر هي y_f = y_i + v_i t + 0.5 g t².', en: 'The equation for the final position of an object in free fall is y_f = y_i + v_i t + 0.5 g t².' }
+                    },
+                    {
+                        q: { ar: 'ما معادلة العلاقة بين السرعة المتجهة والتسارع والإزاحة في السقوط الحر؟', en: 'What is the equation relating velocity, acceleration, and displacement in free fall?' },
+                        options: [
+                            { ar: 'v_f² = v_i² + 2 g Δy', en: 'v_f² = v_i² + 2 g Δy' },
+                            { ar: 'v_f = v_i + 2 g Δy', en: 'v_f = v_i + 2 g Δy' },
+                            { ar: 'v_f² = v_i + 2 g Δy', en: 'v_f² = v_i + 2 g Δy' },
+                            { ar: 'v_f = v_i² + 2 g Δy', en: 'v_f = v_i² + 2 g Δy' }
+                        ],
+                        correct: 0,
+                        answer: { ar: 'معادلة العلاقة بين السرعة المتجهة والتسارع والإزاحة في السقوط الحر هي v_f² = v_i² + 2 g Δy.', en: 'The equation relating velocity, acceleration, and displacement in free fall is v_f² = v_i² + 2 g Δy.' }
+                    },
+                    {
+                        q: { ar: 'إذا أسقط جسم من السكون، ما سرعته بعد 3 ثوان؟ (g = 9.8 م/ث²)', en: 'If an object is dropped from rest, what is its velocity after 3 seconds? (g = 9.8 m/s²)' },
+                        options: [
+                            { ar: '29.4 م/ث', en: '29.4 m/s' },
+                            { ar: '9.8 م/ث', en: '9.8 m/s' },
+                            { ar: '19.6 م/ث', en: '19.6 m/s' },
+                            { ar: '39.2 م/ث', en: '39.2 m/s' }
+                        ],
+                        correct: 0,
+                        answer: { ar: 'v_f = v_i + g t = 0 + 9.8 × 3 = 29.4 م/ث.', en: 'v_f = v_i + g t = 0 + 9.8 × 3 = 29.4 m/s.' }
+                    }
+                ]
+            },
+            {
+                id: 'sec5',
+                title: { ar: '🔹 الجزء الخامس: التطبيقات الحياتية', en: '🔹 Part 5: Real-Life Applications' },
+                questions: [
+                    {
+                        q: { ar: 'يسقط قالب من عامل بناء من ارتفاع 20 م. ما سرعته عند وصوله للأرض؟ (g = 9.8 م/ث²)', en: 'A brick falls from a height of 20 m. What is its velocity when it reaches the ground? (g = 9.8 m/s²)' },
+                        options: [
+                            { ar: '19.8 م/ث', en: '19.8 m/s' },
+                            { ar: '20 م/ث', en: '20 m/s' },
+                            { ar: '9.8 م/ث', en: '9.8 m/s' },
+                            { ar: '39.2 م/ث', en: '39.2 m/s' }
+                        ],
+                        correct: 0,
+                        answer: { ar: 'v_f² = v_i² + 2 g Δy → v_f = √(0 + 2 × 9.8 × 20) ≈ 19.8 م/ث.', en: 'v_f² = v_i² + 2 g Δy → v_f = √(0 + 2 × 9.8 × 20) ≈ 19.8 m/s.' }
+                    },
+                    {
+                        q: { ar: 'تقذف كرة لأعلى بسرعة 15 م/ث. ما أقصى ارتفاع تصل إليه؟ (g = 9.8 م/ث²)', en: 'A ball is thrown upward with a velocity of 15 m/s. What is the maximum height it reaches? (g = 9.8 m/s²)' },
+                        options: [
+                            { ar: '11.48 م', en: '11.48 m' },
+                            { ar: '15 م', en: '15 m' },
+                            { ar: '7.5 م', en: '7.5 m' },
+                            { ar: '22.5 م', en: '22.5 m' }
+                        ],
+                        correct: 0,
+                        answer: { ar: 'v_f² = v_i² + 2 g Δy → 0 = 15² + 2 × (-9.8) × Δy → Δy = 11.48 م.', en: 'v_f² = v_i² + 2 g Δy → 0 = 15² + 2 × (-9.8) × Δy → Δy = 11.48 m.' }
+                    },
+                    {
+                        q: { ar: 'يسقط جسم من ارتفاع 45 م. ما الزمن الذي يستغرقه للوصول للأرض؟ (g = 9.8 م/ث²)', en: 'An object falls from a height of 45 m. What is the time it takes to reach the ground? (g = 9.8 m/s²)' },
+                        options: [
+                            { ar: '3.03 ث', en: '3.03 s' },
+                            { ar: '4.5 ث', en: '4.5 s' },
+                            { ar: '2.12 ث', en: '2.12 s' },
+                            { ar: '9.8 ث', en: '9.8 s' }
+                        ],
+                        correct: 0,
+                        answer: { ar: 'Δy = v_i t + 0.5 g t² → 45 = 0 + 0.5 × 9.8 × t² → t ≈ 3.03 ث.', en: 'Δy = v_i t + 0.5 g t² → 45 = 0 + 0.5 × 9.8 × t² → t ≈ 3.03 s.' }
+                    },
+                    {
+                        q: { ar: 'تقذف كرة لأعلى بسرعة 20 م/ث. ما الزمن الذي تستغرقه للوصول لأقصى ارتفاع؟ (g = 9.8 م/ث²)', en: 'A ball is thrown upward with a velocity of 20 m/s. What is the time it takes to reach the maximum height? (g = 9.8 m/s²)' },
+                        options: [
+                            { ar: '2.04 ث', en: '2.04 s' },
+                            { ar: '10 ث', en: '10 s' },
+                            { ar: '4.08 ث', en: '4.08 s' },
+                            { ar: '1 ث', en: '1 s' }
+                        ],
+                        correct: 0,
+                        answer: { ar: 'v_f = v_i + g t → 0 = 20 + (-9.8) × t → t ≈ 2.04 ث.', en: 'v_f = v_i + g t → 0 = 20 + (-9.8) × t → t ≈ 2.04 s.' }
+                    }
+                ]
+            }
+        ]
+    };
+
+    // ==================== Helper Functions ====================
+    function shuffleArray(array) {
+        const arr = [...array];
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    let examData;
+    let correctAnswersMap = {};
+    let currentLang = 'ar';
+    let timeRemaining = 3600;
+    let timerInterval;
+
+    function prepareShuffledExam() {
+        examData = JSON.parse(JSON.stringify(originalExamData));
+        correctAnswersMap = {};
+        let globalIdx = 0;
+
+        examData.sections.forEach((section) => {
+            section.questions = shuffleArray(section.questions);
+
+            section.questions.forEach((q) => {
+                const optionsWithCorrect = q.options.map((opt, idx) => ({
+                    option: opt,
+                    isCorrect: idx === q.correct
+                }));
+
+                const shuffledOptions = shuffleArray(optionsWithCorrect);
+                q.options = shuffledOptions.map(o => o.option);
+
+                const newCorrectIndex = shuffledOptions.findIndex(o => o.isCorrect);
+                q.correct = newCorrectIndex;
+
+                correctAnswersMap[globalIdx] = String.fromCharCode(97 + newCorrectIndex);
+                globalIdx++;
+            });
+        });
+    }
+
+    function reshuffleExam() {
+        prepareShuffledExam();
+        renderExam();
+        document.querySelectorAll('input[type="radio"]:checked').forEach(r => r.checked = false);
+        document.getElementById('results-panel').classList.add('hidden');
+        document.querySelectorAll('.correct, .incorrect').forEach(el => {
+            el.classList.remove('correct', 'incorrect');
+        });
+        alert(currentLang === 'ar' ? '🔀 تم إعادة خلط الأسئلة والخيارات بنجاح!' : '🔀 Questions and options have been reshuffled successfully!');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function setLanguage(lang) {
+        currentLang = lang;
+        document.documentElement.lang = lang;
+        document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+
+        document.getElementById('btn-ar').classList.toggle('active', lang === 'ar');
+        document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+
+        document.body.classList.toggle('en-mode', lang === 'en');
+
+        document.querySelectorAll('[data-ar][data-en]').forEach(el => {
+            el.textContent = el.getAttribute(`data-${lang}`);
+        });
+
+        renderExam();
+    }
+
+    function renderExam() {
+        const container = document.getElementById('exam-content');
+        const labels = {
+            ar: { option: ['أ', 'ب', 'ج', 'د'], answer: '✅ الإجابة:' },
+            en: { option: ['A', 'B', 'C', 'D'], answer: '✅ Answer:' }
+        };
+        const lbl = labels[currentLang];
+        const isRTL = currentLang === 'ar';
+
+        let html = '';
+        let globalIdx = 0;
+
+        examData.sections.forEach((section) => {
+            html += `
+            <section class="bg-white p-6 rounded-xl shadow-lg">
+                <h2 class="text-xl font-bold mb-4 text-blue-700">${section.title[currentLang]}</h2>
+                <ol class="space-y-4 text-sm">`;
+
+            section.questions.forEach((q) => {
+                const borderSide = isRTL ? 'border-r-4 pr-4' : 'border-l-4 pl-4';
+                html += `
+                    <li class="${borderSide} border-blue-500 py-2" id="q-${globalIdx}">
+                        <strong>${globalIdx + 1}.</strong> ${q.q[currentLang]}<br>`;
+
+                q.options.forEach((opt, oIdx) => {
+                    const radioSide = isRTL ? 'mr-4 ml-2' : 'ml-4 mr-2';
+                    html += `
+                        <label class="cursor-pointer block mt-1 ${isRTL ? 'mr-4' : 'ml-4'}">
+                            <input type="radio" name="q${globalIdx}" value="${String.fromCharCode(97 + oIdx)}" class="${radioSide}">
+                            ${lbl.option[oIdx]}) ${opt[currentLang]}
+                        </label>`;
+                });
+
+                html += `
+                        <div class="answer-box text-green-700 mt-2 font-medium hidden">
+                            ${lbl.answer} ${lbl.option[q.correct]}) ${q.options[q.correct][currentLang]} — ${q.answer[currentLang]}
+                        </div>
+                    </li>`;
+                globalIdx++;
+            });
+
+            html += `
+                </ol>
+            </section>`;
+        });
+
+        container.innerHTML = html;
+    }
+
+    function startTimer() {
+        document.getElementById('timer-container').style.display = 'block';
+        timerInterval = setInterval(() => {
+            timeRemaining--;
+            const minutes = Math.floor(timeRemaining / 60);
+            const seconds = timeRemaining % 60;
+            const timerEl = document.getElementById('timer');
+            timerEl.textContent = `${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
+            if (timeRemaining <= 300) timerEl.classList.add('timer-warning');
+            if (timeRemaining <= 0) {
+                clearInterval(timerInterval);
+                alert(currentLang === 'ar' ? "انتهى الوقت! سيتم تسليم الامتحان تلقائياً." : "Time's up! Exam will be submitted automatically.");
+                gradeExam();
+            }
+        }, 1000);
+    }
+
+    function toggleAnswers() {
+        document.querySelectorAll('.answer-box').forEach(el => el.classList.toggle('hidden'));
+    }
+
+    function gradeExam() {
+        clearInterval(timerInterval);
+        let correctCount = 0;
+        let sec1 = 0, sec2 = 0, sec3 = 0, sec4 = 0, sec5 = 0;
+
+        for (let i = 0; i < 20; i++) {
+            const selected = document.querySelector(`input[name="q${i}"]:checked`);
+            const li = document.getElementById(`q-${i}`);
+            const correctAnswer = correctAnswersMap[i];
+
+            if (li) {
+                const isCorrect = selected && selected.value === correctAnswer;
+
+                if (isCorrect) {
+                    correctCount++;
+                    li.classList.add('correct');
+                    li.classList.remove('incorrect');
+
+                    if (i < 4) sec1++;
+                    else if (i < 8) sec2++;
+                    else if (i < 12) sec3++;
+                    else if (i < 16) sec4++;
+                    else sec5++;
+                } else {
+                    li.classList.add('incorrect');
+                    li.classList.remove('correct');
+                }
+            }
+        }
+
+        const score = (correctCount / 20) * 100;
+        const successRate = Math.round(score);
+
+        document.getElementById('res-total').textContent = `${Math.round(score)} / 100`;
+        document.getElementById('res-name').textContent = document.getElementById('studentName').value || (currentLang === 'ar' ? 'طالب' : 'Student');
+        document.getElementById('res-date').textContent = new Date().toLocaleDateString(currentLang === 'ar' ? 'ar-AE' : 'en-US');
+
+        document.getElementById('sec1-score').textContent = `${sec1}/4`;
+        document.getElementById('sec2-score').textContent = `${sec2}/4`;
+        document.getElementById('sec3-score').textContent = `${sec3}/4`;
+        document.getElementById('sec4-score').textContent = `${sec4}/4`;
+        document.getElementById('sec5-score').textContent = `${sec5}/4`;
+
+        const badge = document.getElementById('success-badge');
+        const percent = document.getElementById('success-percent');
+        percent.textContent = `${successRate}%`;
+
+        if (currentLang === 'ar') {
+            if (successRate >= 90) { badge.textContent = 'ممتاز'; badge.className = 'success-badge grade-excellent'; }
+            else if (successRate >= 75) { badge.textContent = 'جيد جداً'; badge.className = 'success-badge grade-good'; }
+            else if (successRate >= 50) { badge.textContent = 'جيد'; badge.className = 'success-badge grade-pass'; }
+            else { badge.textContent = 'يحتاج تحسين'; badge.className = 'success-badge grade-fail'; }
+        } else {
+            if (successRate >= 90) { badge.textContent = 'Excellent'; badge.className = 'success-badge grade-excellent'; }
+            else if (successRate >= 75) { badge.textContent = 'Very Good'; badge.className = 'success-badge grade-good'; }
+            else if (successRate >= 50) { badge.textContent = 'Good'; badge.className = 'success-badge grade-pass'; }
+            else { badge.textContent = 'Needs Improvement'; badge.className = 'success-badge grade-fail'; }
+        }
+
+        document.getElementById('results-panel').classList.remove('hidden');
+        document.getElementById('results-panel').scrollIntoView({ behavior: 'smooth' });
+        document.getElementById('sendEmailBtn').classList.remove('hidden');
+    }
+
+    function sendResultsToEmail() {
+        const btn = document.getElementById('sendEmailBtn');
+        const status = document.getElementById('emailStatus');
+        btn.disabled = true;
+        btn.textContent = currentLang === 'ar' ? '⏳ جاري الإرسال...' : '📤 Sending...';
+
+        const name = document.getElementById('studentName').value || 'N/A';
+        const studentClass = document.getElementById('studentClass').value || 'N/A';
+        const date = document.querySelector('input[type="text"]').value || new Date().toLocaleDateString();
+        const score = document.getElementById('res-total').textContent;
+        const successRate = document.getElementById('success-percent').textContent;
+        const badge = document.getElementById('success-badge').textContent;
+
+        const sectionNames = {
+            ar: ['تعريف السقوط الحر', 'تسارع السقوط الحر', 'الرسومات البيانية', 'معادلات الحركة', 'التطبيقات الحياتية'],
+            en: ['Free Fall Definition', 'Free-Fall Acceleration', 'Graphs', 'Motion Equations', 'Real-Life Applications']
+        };
+        const currentSectionNames = sectionNames[currentLang];
+
+        let answersHTML = `
+        <div style="font-family: 'Segoe UI', Tahoma, Arial, sans-serif; direction: ${currentLang === 'ar' ? 'rtl' : 'ltr'};">
+            <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 20px; border-radius: 10px 10px 0 0; text-align: center;">
+                <h2 style="margin: 0; font-size: 22px;">🌍 ${currentLang === 'ar' ? 'نتيجة امتحان السقوط الحر (الفيزياء)' : 'Free Fall Exam (Physics) Result'}</h2>
+                <p style="margin: 5px 0 0 0; opacity: 0.9;">${currentLang === 'ar' ? 'وحدة 3: الحركة المتسارعة - القسم 3' : 'Unit 3: Accelerated Motion - Section 3'}</p>
+                <p style="margin: 5px 0 0 0; font-size: 12px; opacity: 0.8;">🔀 ${currentLang === 'ar' ? 'تم خلط الأسئلة تلقائياً' : 'Questions were randomly shuffled'}</p>
+            </div>
+
+            <div style="background: #eff6ff; padding: 15px; border: 1px solid #bfdbfe;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold; color: #1e40af;">${currentLang === 'ar' ? '👤 الاسم:' : '👤 Name:'}</td>
+                        <td style="padding: 8px;">${name}</td>
+                        <td style="padding: 8px; font-weight: bold; color: #1e40af;">${currentLang === 'ar' ? '🏫 الشعبة:' : '🏫 Class:'}</td>
+                        <td style="padding: 8px;">${studentClass}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold; color: #1e40af;">${currentLang === 'ar' ? '📅 التاريخ:' : '📅 Date:'}</td>
+                        <td style="padding: 8px;">${date}</td>
+                        <td style="padding: 8px; font-weight: bold; color: #1e40af;">${currentLang === 'ar' ? '🏆 التقدير:' : '🏆 Grade:'}</td>
+                        <td style="padding: 8px;">${badge}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div style="background: white; padding: 20px; text-align: center; border-bottom: 2px solid #e5e7eb;">
+                <div style="display: inline-block; margin: 0 15px;">
+                    <div style="font-size: 32px; font-weight: bold; color: #3b82f6;">${score}</div>
+                    <div style="color: #6b7280; font-size: 13px;">${currentLang === 'ar' ? 'الدرجة الكلية' : 'Total Score'}</div>
+                </div>
+                <div style="display: inline-block; margin: 0 15px;">
+                    <div style="font-size: 32px; font-weight: bold; color: #10b981;">${successRate}%</div>
+                    <div style="color: #6b7280; font-size: 13px;">${currentLang === 'ar' ? 'نسبة النجاح' : 'Success Rate'}</div>
+                </div>
+            </div>
+
+            <h3 style="background: #f3f4f6; padding: 12px; margin: 0; color: #1f2937; border-bottom: 2px solid #d1d5db;">
+                📝 ${currentLang === 'ar' ? 'تفاصيل الإجابات' : 'Answer Details'}
+            </h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <thead>
+                    <tr style="background: #3b82f6; color: white;">
+                        <th style="padding: 10px; border: 1px solid #1e40af; width: 8%;">#</th>
+                        <th style="padding: 10px; border: 1px solid #1e40af; width: 32%;">${currentLang === 'ar' ? 'القسم' : 'Section'}</th>
+                        <th style="padding: 10px; border: 1px solid #1e40af; width: 15%;">${currentLang === 'ar' ? 'الإجابة' : 'Answer'}</th>
+                        <th style="padding: 10px; border: 1px solid #1e40af; width: 15%;">${currentLang === 'ar' ? 'الصحيحة' : 'Correct'}</th>
+                        <th style="padding: 10px; border: 1px solid #1e40af; width: 15%;">${currentLang === 'ar' ? 'النتيجة' : 'Status'}</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+        let sectionScores = [0, 0, 0, 0, 0];
+        let sectionTotals = [4, 4, 4, 4, 4];
+
+        for (let i = 0; i < 20; i++) {
+            const selected = document.querySelector(`input[name="q${i}"]:checked`);
+            const selectedValue = selected ? selected.value : '-';
+            const correctValue = correctAnswersMap[i];
+            const isCorrect = selectedValue === correctValue;
+
+            const sectionIndex = Math.floor(i / 4);
+            if (isCorrect) sectionScores[sectionIndex]++;
+
+            const rowBg = i % 2 === 0 ? '#f9fafb' : '#ffffff';
+            const statusBg = isCorrect ? '#dcfce7' : '#fee2e2';
+            const statusColor = isCorrect ? '#166534' : '#991b1b';
+            const statusIcon = isCorrect ? '✅' : '❌';
+            const statusText = isCorrect
+                ? (currentLang === 'ar' ? 'صحيح' : 'Correct')
+                : (currentLang === 'ar' ? 'خطأ' : 'Wrong');
+
+            answersHTML += `
+                <tr style="background: ${rowBg};">
+                    <td style="padding: 8px; border: 1px solid #e5e7eb; text-align: center; font-weight: bold;">${i + 1}</td>
+                    <td style="padding: 8px; border: 1px solid #e5e7eb;">${currentSectionNames[sectionIndex]}</td>
+                    <td style="padding: 8px; border: 1px solid #e5e7eb; text-align: center; font-weight: bold;">${selectedValue.toUpperCase()}</td>
+                    <td style="padding: 8px; border: 1px solid #e5e7eb; text-align: center; font-weight: bold; color: #059669;">${correctValue.toUpperCase()}</td>
+                    <td style="padding: 8px; border: 1px solid #e5e7eb; text-align: center; background: ${statusBg}; color: ${statusColor}; font-weight: bold;">
+                        ${statusIcon} ${statusText}
+                    </td>
+                </tr>`;
+        }
+
+        answersHTML += `
+                </tbody>
+            </table>
+
+            <h3 style="background: #f3f4f6; padding: 12px; margin: 0; color: #1f2937; border-bottom: 2px solid #d1d5db; border-top: 3px solid #3b82f6;">
+                📊 ${currentLang === 'ar' ? 'تفصيل الأداء' : 'Performance Breakdown'}
+            </h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <thead>
+                    <tr style="background: #1d4ed8; color: white;">
+                        <th style="padding: 10px; border: 1px solid #1e3a8a;">${currentLang === 'ar' ? 'القسم' : 'Section'}</th>
+                        <th style="padding: 10px; border: 1px solid #1e3a8a; width: 20%;">${currentLang === 'ar' ? 'النتيجة' : 'Score'}</th>
+                        <th style="padding: 10px; border: 1px solid #1e3a8a; width: 20%;">${currentLang === 'ar' ? 'النسبة' : 'Percentage'}</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+        for (let i = 0; i < 5; i++) {
+            const percentage = Math.round((sectionScores[i] / sectionTotals[i]) * 100);
+            const barColor = percentage >= 75 ? '#10b981' : percentage >= 50 ? '#f59e0b' : '#ef4444';
+            const rowBg = i % 2 === 0 ? '#f9fafb' : '#ffffff';
+
+            answersHTML += `
+                <tr style="background: ${rowBg};">
+                    <td style="padding: 10px; border: 1px solid #e5e7eb; font-weight: 600;">${currentSectionNames[i]}</td>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb; text-align: center; font-weight: bold; color: #3b82f6;">
+                        ${sectionScores[i]} / ${sectionTotals[i]}
+                    </td>
+                    <td style="padding: 10px; border: 1px solid #e5e7eb;">
+                        <div style="background: #e5e7eb; border-radius: 10px; overflow: hidden; height: 20px; position: relative;">
+                            <div style="background: ${barColor}; width: ${percentage}%; height: 100%;"></div>
+                            <span style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 11px; font-weight: bold; color: #1f2937;">
+                                ${percentage}%
+                            </span>
+                        </div>
+                    </td>
+                </tr>`;
+        }
+
+        answersHTML += `
+                </tbody>
+            </table>
+
+            <div style="background: linear-gradient(135deg, #fef3c7, #fde68a); padding: 15px; border-radius: 0 0 10px 10px; border-top: 2px solid #f59e0b;">
+                <p style="margin: 0; color: #78350f; text-align: center; font-size: 13px;">
+                    💡 <strong>${currentLang === 'ar' ? 'ملاحظة:' : 'Note:'}</strong>
+                    ${currentLang === 'ar'
+                        ? 'تم إرسال هذا التقرير تلقائياً من منصة 4U التعليمية | Mr. Mohammed Hesham'
+                        : 'This report was automatically sent from 4U Educational Platform | Mr. Mohammed Hesham'}
+                </p>
+            </div>
+        </div>`;
+
+        const templateParams = {
+            to_email: TARGET_EMAIL,
+            student_name: name,
+            student_class: studentClass,
+            exam_date: date,
+            total_score: score,
+            success_rate: successRate,
+            grade: badge,
+            answers_table: answersHTML
+        };
+
+        emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams)
+            .then(() => {
+                status.textContent = currentLang === 'ar' ? '✅ تم إرسال النتائج بنجاح!' : '✅ Results sent successfully!';
+                status.style.color = '#059669';
+                btn.textContent = currentLang === 'ar' ? '✓ تم الإرسال' : '✓ Sent';
+            })
+            .catch(err => {
+                status.textContent = currentLang === 'ar' ? '❌ فشل الإرسال، حاول مرة أخرى' : '❌ Failed to send, try again';
+                status.style.color = '#dc2626';
+                btn.disabled = false;
+                btn.textContent = currentLang === 'ar' ? '📧 إعادة المحاولة' : '📧 Retry Send';
+                console.error('EmailJS Error:', err);
+            });
+    }
+
+    // Initialize
+    window.addEventListener('DOMContentLoaded', () => {
+        prepareShuffledExam();
+        renderExam();
+        startTimer();
+    });
+    </script>
+</body>
+</html>
